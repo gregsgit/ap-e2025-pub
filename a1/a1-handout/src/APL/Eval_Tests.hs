@@ -7,28 +7,28 @@ import Test.Tasty.HUnit (testCase, (@?=))
 
 -- -- Consider this example when you have added the necessary constructors.
 -- -- The Y combinator in a form suitable for strict evaluation.
--- yComb :: Exp
--- yComb =
---   Lambda "f" $
---     Apply
---       (Lambda "g" (Apply (Var "g") (Var "g")))
---       ( Lambda
---           "g"
---           ( Apply
---               (Var "f")
---               (Lambda "a" (Apply (Apply (Var "g") (Var "g")) (Var "a")))
---           )
---       )
+yComb :: Exp
+yComb =
+  Lambda "f" $
+    Apply
+      (Lambda "g" (Apply (Var "g") (Var "g")))
+      ( Lambda
+          "g"
+          ( Apply
+              (Var "f")
+              (Lambda "a" (Apply (Apply (Var "g") (Var "g")) (Var "a")))
+          )
+      )
 
--- fact :: Exp
--- fact =
---   Apply yComb $
---     Lambda "rec" $
---       Lambda "n" $
---         If
---           (Eql (Var "n") (CstInt 0))
---           (CstInt 1)
---           (Mul (Var "n") (Apply (Var "rec") (Sub (Var "n") (CstInt 1))))
+fact :: Exp
+fact =
+  Apply yComb $
+    Lambda "rec" $
+      Lambda "n" $
+        If
+          (Eql (Var "n") (CstInt 0))
+          (CstInt 1)
+          (Mul (Var "n") (Apply (Var "rec") (Sub (Var "n") (CstInt 1))))
 
 tests :: TestTree
 tests =
@@ -123,6 +123,10 @@ tests =
       --
       testCase "TryCatch fail case" $ eval envEmpty
       (TryCatch (Var " missing ") ( CstInt 1))
-      @?= Right ( ValInt 1)
-
+      @?= Right ( ValInt 1),
+      --
+      testCase "fact 5" $ eval envEmpty
+      (Let "y" yComb (Let "fact" fact (Apply fact (CstInt 5))))
+      @?= Right ( ValInt 120)
+    
     ]
