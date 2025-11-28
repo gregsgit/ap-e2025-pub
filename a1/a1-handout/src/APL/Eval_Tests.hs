@@ -110,11 +110,19 @@ tests =
         ( Lambda "y" (Add (Var "x") (Var "y"))))
       @?= Right ( ValFun [("x",ValInt 2)] "y"
                   (Add (Var "x") (Var "y"))),
-
+      --
       testCase "Apply" $ eval envEmpty
       (Apply (Let "x" ( CstInt 2)
               ( Lambda "y" (Add (Var "x") (Var "y"))))
        (CstInt 3))
-      @?= Right ( ValInt 5)
+      @?= Right ( ValInt 5),
+      --
+      testCase "TryCatch success case" $ eval envEmpty
+      ( TryCatch ( CstInt 0) ( CstInt 1))
+      @?= Right ( ValInt 0),
+      --
+      testCase "TryCatch fail case" $ eval envEmpty
+      (TryCatch (Var " missing ") ( CstInt 1))
+      @?= Right ( ValInt 1)
 
     ]

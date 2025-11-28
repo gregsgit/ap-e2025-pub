@@ -112,3 +112,8 @@ eval env (Apply funExp valExp) =
         Right argVal ->
           eval (envExtend argVar argVal funEnv) bodyExp
     Right _ -> Left "First argument to an apply must be a lambda"
+
+eval env (TryCatch mainExp catchExp) =
+  case (eval env mainExp) of
+    Right v -> Right v
+    Left _ -> eval env catchExp
