@@ -29,10 +29,10 @@ envLookup v env = lookup v env
 
 type Error = String
 
-type State = [String]
+type State = ([String], [(Val, Val)])
 
 stateEmpty :: State
-stateEmpty = []
+stateEmpty = ([], [])
 
 newtype EvalM a = EvalM (State -> Env -> Either (Error, State) (a, State))
 
@@ -75,13 +75,29 @@ catch (EvalM m1) (EvalM m2) = EvalM $ \state env ->
 
 runEval :: EvalM a -> (State, Either Error a)
 runEval (EvalM m) = case (m stateEmpty envEmpty) of
-  Left (err, s) -> (reverse s, Left err)
-  Right (x, s) -> (reverse s, Right x)
+  Left (err, (out, kv)) -> ((reverse out, kv), Left err)
+  Right (x, (out, kv)) -> ((reverse out, kv), Right x)
+
+evalKvGet :: Val -> EvalM Val
+evalKvGet k = EvalM $ \ (out, kv) _env ->
+                        case (lookup k kv) of
+                          Nothing -> Left (("Invalid key: " ++ (show k)), (out, kv))
+                          Just v -> Right (v, (out, kv))
+
+removeKey :: Val -> [(Val, Val)] -> [(Val, Val)] -> [(Val, Val)]
+removeKey _key start [] = start
+removeKey key start ((key', val) : rest) = if (key == key') then start ++ rest
+                                           else removeKey key ((key', val) : start) rest
+
+evalKvPut :: Val -> Val -> EvalM ()
+evalKvPut key val = EvalM $ \ (out, kv) _env ->
+                              let kv' = removeKey key [] kv
+                              in Right ((), (out, (key, val) : kv'))
 
 evalPrint :: String -> EvalM ()
 evalPrint str = do
-  state <- getState
-  putState (str : state)
+  (out, kv) <- getState
+  putState ((str : out), kv)
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
@@ -174,3 +190,13 @@ eval (Print str e) = do
         (ValFun _ _ _) -> "#<fun>"
   evalPrint (str ++ ": " ++ valStr)
   pure v
+
+eval (KvPut keyExp valExp) = do
+  key <- eval keyExp
+  val <- eval valExp
+  evalKvPut key val
+  pure val
+
+eval (KvGet keyExp) = do
+  key <- eval keyExp
+  evalKvGet key
