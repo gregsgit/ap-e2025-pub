@@ -53,62 +53,19 @@ check (Var v) = do
   case (elem v vars) of
     False -> failure $ "Variable not in scope: " ++ v
     True -> pure ()
-check (Add e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Sub e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Mul e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Div e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Pow e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Eql e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (If cond e1 e2) = do
-  _vcond <- check cond
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Let var e1 e2) = do
-  _v1 <- check e1
-  _v2 <- bindVar var (check e2)
-  pure ()
-check (ForLoop (loopparam, initial) (iv, bound) body) = do
-  _initVal <- check initial
-  _boundVal <- check bound
-  _bodyVal <- bindVar loopparam (bindVar iv (check body))
-  pure ()
-check (Lambda var body) = do
-  _bodyVal <- bindVar var (check body)
-  pure ()
-check (Apply e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (TryCatch e1 e2) = do
-  _v1 <- check e1
-  _v2 <- check e2
-  pure ()
-check (Print _str e) = do
-  _v1 <- check e
-  pure ()
-check (KvPut keyExp valExp) = do
-  _v1 <- check keyExp
-  _v2 <- check valExp
-  pure ()
-check (KvGet keyExp) = do
-  _v1 <- check keyExp
-  pure ()
+check (Add e1 e2) = check e1 >> check e2 >> pure ()
+check (Sub e1 e2) = check e1 >> check e2 >> pure ()
+check (Mul e1 e2) = check e1 >> check e2 >> pure ()
+check (Div e1 e2) = check e1 >> check e2 >> pure ()
+check (Pow e1 e2) = check e1 >> check e2 >> pure ()
+check (Eql e1 e2) = check e1 >> check e2 >> pure ()
+check (If cond e1 e2) = check cond >> check e1 >> check e2 >> pure ()
+check (Let var e1 e2) = check e1 >> bindVar var (check e2) >> pure ()
+check (ForLoop (loopparam, initial) (iv, bound) body) = 
+  check initial >> check bound >> bindVar loopparam (bindVar iv (check body)) >> pure ()
+check (Lambda var body) = bindVar var (check body) >> pure ()
+check (Apply e1 e2) = check e1 >> check e2 >> pure ()
+check (TryCatch e1 e2) = check e1 >> check e2 >> pure ()
+check (Print _str e) = check e >> pure ()
+check (KvPut keyExp valExp) = check keyExp >> check valExp >> pure ()
+check (KvGet keyExp) = check keyExp >> pure ()
