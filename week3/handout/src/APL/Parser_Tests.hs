@@ -31,4 +31,8 @@ tests :: TestTree
 tests =
   testGroup
     "Parsing"
-    []
+    [ parserTest "123" (CstInt 123),
+      parserTest " 123" $ CstInt 123,
+      parserTest "123 " $ CstInt 123,
+      parserTestFail "123ab"
+    ]
