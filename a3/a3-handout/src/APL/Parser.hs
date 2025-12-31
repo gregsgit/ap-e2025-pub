@@ -10,7 +10,9 @@
 --       |  Exp “/” Exp
 --       |  Exp “==” Exp
 --       |  Exp “**” Exp
---
+--       |  “print” string Atom
+--       |  “get” Atom
+--       |  “put” Atom Atom--
 -- refactored:
 -- 
 -- Atom  ::= var | int | bool | “(” Exp “)”
@@ -80,7 +82,10 @@ keywords =
     "then",
     "else",
     "true",
-    "false"
+    "false",
+    "print",
+    "get",
+    "put"
   ]
 
 lVName :: Parser VName
@@ -101,6 +106,13 @@ lString s = lexeme $ void $ chunk s
 
 lKeyword :: String -> Parser ()
 lKeyword s = lexeme $ void $ try $ chunk s <* notFollowedBy (satisfy isAlphaNum)
+
+lQuotedString :: Parser String
+lQuotedString = lexeme $ do
+  _ <- chunk "\""
+  s <- many $ satisfy (/= '"')
+  _ <- chunk "\""
+  pure s
 
 pBool :: Parser Bool
 pBool =
@@ -131,10 +143,22 @@ pFExp = pAtom >>= chain
 pLExp :: Parser Exp
 pLExp =
   choice
-    [ If
-        <$> (lKeyword "if" *> pExp)
-        <*> (lKeyword "then" *> pExp)
-        <*> (lKeyword "else" *> pExp),
+    [ If <$> (lKeyword "if" *> pExp)
+      <*> (lKeyword "then" *> pExp)
+      <*> (lKeyword "else" *> pExp),
+      do
+        s <- (lKeyword "print" *> lQuotedString)
+        a <- pAtom
+        pure $ Print s a,
+      do
+        _ <- lKeyword "get" 
+        a <- pAtom
+        pure $ KvGet a,
+      do
+        _ <- lKeyword "put" 
+        l <- pAtom
+        v <- pAtom
+        pure $ KvPut l v,
       pFExp
     ]
 

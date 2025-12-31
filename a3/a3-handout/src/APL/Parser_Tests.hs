@@ -74,5 +74,12 @@ tests =
       "== and **"
       [ parserTest "x+y==y+x" (Eql (Add (Var "x") (Var "y")) (Add (Var "y") (Var "x"))),
         parserTest "x*y**z" (Mul (Var "x") (Pow (Var "y") (Var "z")))
+      ],
+      testGroup
+      "print, get, put"
+      [ parserTest "print \"foo\" x" (Print "foo" (Var "x")),
+        parserTest "get x + y"  (Add (KvGet (Var "x")) (Var "y")),
+        parserTest "getx" (Var "getx"),
+        parserTest "put x y" (KvPut (Var "x") (Var "y"))
       ]
     ]
