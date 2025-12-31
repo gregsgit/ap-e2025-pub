@@ -3,6 +3,10 @@
 --       |  FExp FExp
 -- LExp ::= FExp
 --       |  “if” Exp “then” Exp “else” Exp
+--       |  “\” var “->” Exp
+--       |  “try” Exp “catch” Exp
+--       |  “let” var “=” Exp “in” Exp
+--       |  “loop” var “=” Exp “for” var “<” Exp “do” Exp
 -- Exp  ::= LExp
 --       |  Exp “+” Exp
 --       |  Exp “-” Exp
@@ -21,6 +25,9 @@
 -- FExp  ::= Atom FExp0
 -- LExp  ::= FExp
 --        |  “if” Exp “then” Exp “else” Exp
+--        |  "put" Atom Atom
+--        |  "get" Atom
+--        |  "print" String Atom
 -- Exp1' ::= "*" Exp1'
 --        |  "/" Exp1'
 --        | 
@@ -48,7 +55,6 @@
 --        | 
 -- Exp0  ::= Exp1 Exp0'
 -- Exp  ::= Exp0
-
 
 module APL.Parser (parseAPL) where
 
@@ -85,7 +91,17 @@ keywords =
     "false",
     "print",
     "get",
-    "put"
+    "put",
+    "\\",
+    "->",
+    "try",
+    "catch",
+    "let",
+    "=",
+    "in",
+    "loop",
+    "for",
+    "do"
   ]
 
 lVName :: Parser VName
@@ -143,25 +159,51 @@ pFExp = pAtom >>= chain
 pLExp :: Parser Exp
 pLExp =
   choice
-    [ If <$> (lKeyword "if" *> pExp)
+    [ -- if then else
+      If <$> (lKeyword "if" *> pExp)
       <*> (lKeyword "then" *> pExp)
       <*> (lKeyword "else" *> pExp),
+      -- print 
       do
         s <- (lKeyword "print" *> lQuotedString)
         a <- pAtom
         pure $ Print s a,
+      -- get
       do
         _ <- lKeyword "get" 
         a <- pAtom
         pure $ KvGet a,
+      -- put
       do
         _ <- lKeyword "put" 
         l <- pAtom
         v <- pAtom
         pure $ KvPut l v,
+      -- lambda
+      do
+        _ <- lKeyword "\\"
+        v <- lVName
+        _ <- lKeyword "->"
+        b <- pExp
+        pure $ Lambda v b,
+      -- try
+      do
+        _ <- lKeyword "try"
+        e <- pExp
+        _ <- lKeyword "catch"
+        e1 <- pExp
+        pure $ TryCatch e e1,
+      -- let
+      do
+        _ <- lKeyword "let"
+        v <- lVName
+        _ <- lKeyword "="
+        e0 <- pExp
+        _ <- lKeyword "in"
+        e <- pExp
+        pure $ Let v e0 e,
       pFExp
     ]
-
 
 pExp3 :: Parser Exp
 pExp3 = pLExp >>= chain

@@ -81,5 +81,13 @@ tests =
         parserTest "get x + y"  (Add (KvGet (Var "x")) (Var "y")),
         parserTest "getx" (Var "getx"),
         parserTest "put x y" (KvPut (Var "x") (Var "y"))
+      ],
+      testGroup
+      "lambda, try, let, loop"
+      [ parserTest "\\ x -> x + 2" (Lambda "x" (Add (Var "x") (CstInt 2))),
+        parserTest "try (x + 3) catch x" (TryCatch (Add (Var "x") (CstInt 3)) (Var "x")),
+        parserTest "let x = y in z" (Let "x" (Var "y") (Var "z")),
+        parserTestFail "let true = y in z",
+        parserTestFail "x let v = 2 in v"
       ]
     ]
